@@ -106,9 +106,9 @@ class JudoSensor(CoordinatorEntity, SensorEntity):
         data = self.coordinator.data
         return {
             "identifiers": {(DOMAIN, self.entry_id)},
-            "name": "JUDO i-soft Plus",
+            "name": "JUDO i-soft plus",
             "manufacturer": "JUDO",
-            "model": "i-soft Plus",
+            "model": "i-soft plus",
             "sw_version": data.get(("version", "software%20version")),
             "hw_version": data.get(("version", "hardware%20version")),
             "serial_number": self._serial_number,

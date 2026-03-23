@@ -1,4 +1,4 @@
-DOMAIN = "judo_softplus"
+DOMAIN = "judo_isoftplus"
 
 CONF_HOST = "host"
 CONF_USERNAME = "username"

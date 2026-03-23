@@ -11,7 +11,7 @@ class JudoNotLoggedInError(Exception):
     pass
 
 
-class JudoSoftplusAPI:
+class JudoISoftPlusAPI:
     def __init__(self, host, username, password, serial):
         self.host = host
         self.username = username

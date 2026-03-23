@@ -1,6 +1,6 @@
 {
-  "domain": "judo_softplus",
-  "name": "JUDO i-soft Plus (HTTP JSON)",
+  "domain": "judo_isoftplus",
+  "name": "JUDO i-soft plus (HTTP JSON)",
   "documentation": "https://example.com",
   "version": "1.1.0",
   "codeowners": ["@andreas.schmidt"],

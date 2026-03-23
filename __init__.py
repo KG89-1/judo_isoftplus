@@ -7,7 +7,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 
 from .const import DOMAIN, CONF_SERIAL, DEFAULT_SCAN_INTERVAL
-from .api import JudoSoftplusAPI
+from .api import JudoISoftPlusAPI
 from .sensor import SENSOR_TYPES, HIDDEN_SENSOR_TYPES
 
 import logging
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    api = JudoSoftplusAPI(
+    api = JudoISoftPlusAPI(
         entry.data[CONF_HOST],
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],

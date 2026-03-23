@@ -3,7 +3,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.const import CONF_HOST, CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from .const import DOMAIN, CONF_SERIAL, DEFAULT_SCAN_INTERVAL
-from .api import JudoSoftplusAPI
+from .api import JudoISoftPlusAPI
 import asyncio
 import logging
 
@@ -22,7 +22,7 @@ class JudoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_HOST]
             )
 
-            api = JudoSoftplusAPI(
+            api = JudoISoftPlusAPI(
                 user_input[CONF_HOST],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
@@ -40,7 +40,7 @@ class JudoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             else:
                 return self.async_create_entry(
-                    title="JUDO i-soft Plus",
+                    title="JUDO i-soft plus",
                     data=user_input,
                     options={"scan_interval": DEFAULT_SCAN_INTERVAL},
                 )

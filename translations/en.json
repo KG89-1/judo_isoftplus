@@ -1,9 +1,9 @@
 {
-  "title": "JUDO i-soft Plus",
+  "title": "JUDO i-soft plus",
   "config": {
     "step": {
       "user": {
-        "title": "JUDO i-soft Plus Setup",
+        "title": "JUDO i-soft plus Setup",
         "description": "Enter the login data for your JUDO device.",
         "data": {
           "host": "Host",
