@@ -81,6 +81,9 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 
 ## Changelog
 
+### v0.3.4
+- Diagnostics-Support: Diagnose-Download über die HA-Oberfläche (Zugangsdaten, Host und Seriennummer werden geschwärzt) – ideal als Anhang für GitHub-Issues
+
 ### v0.3.3
 - API-Requests senden jetzt `Accept: application/json` und einen eigenen User-Agent (analog zur bewährten EDOMI-Implementierung) statt der urllib-Defaults
 
@@ -106,6 +109,7 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 
 - **Kurz „nicht verfügbar" nach einem Neustart:** Normal – die Entitäten füllen sich, sobald der erste Hintergrund-Abruf vom (langsamen) Gerät beantwortet wurde.
 - **Sensoren „nicht verfügbar":** Einzelne Lesefehler betreffen nur die jeweilige Entität; erst wenn alle Abfragen fehlschlagen, gilt das Gerät als offline. Details stehen im Log (`custom_components.judo_isoftplus`).
+- **Diagnose-Datei für Fehlermeldungen:** Einstellungen → Geräte & Dienste → JUDO i-soft plus → Gerät → ⋮ → „Diagnose herunterladen" und die JSON-Datei an das GitHub-Issue anhängen (Zugangsdaten sind darin geschwärzt).
 - Debug-Logging aktivieren:
 
 ```yaml
