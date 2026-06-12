@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import JudoAuthError, JudoError, JudoISoftPlusAPI
-from .const import CONF_SERIAL, PLATFORMS
+from .const import CONF_SERIAL, DOMAIN, PLATFORMS
 from .coordinator import JudoConfigEntry, JudoCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,11 +33,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: JudoConfigEntry) -> bool
         raise ConfigEntryNotReady(f"Initial connection failed: {err}") from err
 
     coordinator = JudoCoordinator(hass, entry, api)
-    await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # The i-soft controller answers very slowly. Login/connect above already
+    # validated the device (fail fast -> ConfigEntryNotReady), so the first
+    # full data poll runs in the background instead of blocking HA startup.
+    # Sensors show up immediately and fill in once the data arrives.
+    entry.async_create_background_task(
+        hass,
+        coordinator.async_refresh(),
+        name=f"{DOMAIN} initial refresh",
+    )
     return True
 
 

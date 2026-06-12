@@ -312,10 +312,13 @@ class JudoSensor(CoordinatorEntity["JudoCoordinator"], SensorEntity):
         The coordinator only polls values belonging to enabled entities.
         When a sensor is enabled later, its value is not in the data yet;
         trigger one (debounced) refresh so it fills in right away instead
-        of staying unavailable for a full scan interval.
+        of staying unavailable for a full scan interval. If no data exists
+        at all, the initial background refresh is already on its way - do
+        not trigger a second poll in that case.
         """
         await super().async_added_to_hass()
-        if self._data_key not in (self.coordinator.data or {}):
+        data = self.coordinator.data
+        if data is not None and self._data_key not in data:
             await self.coordinator.async_request_refresh()
 
     @property

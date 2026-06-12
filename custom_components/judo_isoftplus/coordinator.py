@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -18,6 +19,8 @@ from .const import (
     DEVICE_INFO_KEYS,
     DEVICE_INFO_MAX_AGE,
     DOMAIN,
+    KEY_HW_VERSION,
+    KEY_SW_VERSION,
     KEY_WATER_CURRENT,
     KEY_WATER_TOTAL,
     KEY_WATER_TOTAL_LIVE,
@@ -124,6 +127,28 @@ class JudoCoordinator(DataUpdateCoordinator[dict[DataKey, Any]]):
 
         self._device_info_cache = cache
         self._device_info_time = now
+        self._async_update_device_registry()
+
+    def _async_update_device_registry(self) -> None:
+        """Push sw/hw version into the device registry once known.
+
+        The first full poll runs in the background after setup, so the
+        device is registered before the versions are available - update
+        them here instead of at entity creation time.
+        """
+        device_registry = dr.async_get(self.hass)
+        device = device_registry.async_get_device(
+            identifiers={(DOMAIN, self.config_entry.entry_id)}
+        )
+        if device is None:
+            return
+        sw = self._device_info_cache.get(KEY_SW_VERSION)
+        hw = self._device_info_cache.get(KEY_HW_VERSION)
+        device_registry.async_update_device(
+            device.id,
+            sw_version=str(sw) if sw is not None else None,
+            hw_version=str(hw) if hw is not None else None,
+        )
 
     # ------------------------------------------------------------------
     # Which values do we actually need to poll?
