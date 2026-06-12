@@ -1,11 +1,12 @@
 {
   "domain": "judo_isoftplus",
-  "name": "JUDO i-soft plus (HTTP JSON)",
-  "documentation": "https://example.com",
-  "version": "0.1",
-  "codeowners": ["@andreas.schmidt"],
-  "iot_class": "local_polling",
+  "name": "JUDO i-soft plus",
+  "codeowners": ["@KG89-1"],
   "config_flow": true,
+  "documentation": "https://github.com/KG89-1/judo-isoftplus",
   "integration_type": "device",
-  "requirements": []
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/KG89-1/judo-isoftplus/issues",
+  "requirements": [],
+  "version": "0.2.0"
 }

@@ -14,7 +14,12 @@
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen. Anmeldedaten prüfen."
+      "cannot_connect": "Verbindung fehlgeschlagen. Host und Netzwerk prüfen.",
+      "invalid_auth": "Anmeldung fehlgeschlagen. Benutzername und Passwort prüfen.",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Dieses Gerät ist bereits eingerichtet."
     }
   },
   "options": {
@@ -29,14 +34,26 @@
   },
   "entity": {
     "sensor": {
-      "water_today": {
-        "name": "Wasserverbrauch Heute"
+      "water_total_live": {
+        "name": "Gesamtwasserverbrauch Live"
       },
       "water_total": {
         "name": "Gesamtwasserverbrauch"
       },
-      "water_total_live": {
-          "name": "Gesamtwasserverbrauch Live"
+      "water_current": {
+        "name": "Wasserverbrauch Aktuell"
+      },
+      "water_daily": {
+        "name": "Wasserverbrauch Heute"
+      },
+      "water_weekly": {
+        "name": "Wasserverbrauch Woche"
+      },
+      "water_monthly": {
+        "name": "Wasserverbrauch Monat"
+      },
+      "water_yearly": {
+        "name": "Wasserverbrauch Jahr"
       },
       "flow_rate": {
         "name": "Durchflussrate"
@@ -62,11 +79,8 @@
       "vacation": {
         "name": "Urlaubsmodus"
       },
-      "software_version": {
-        "name": "Software Version"
-      },
-      "hardware_version": {
-        "name": "Hardware Version"
+      "ws_standby": {
+        "name": "Wasserstop Standby"
       },
       "abstraction_time": {
         "name": "Max. Entnahmedauer (Grenzwert)"
@@ -76,25 +90,7 @@
       },
       "quantity_limit": {
         "name": "Max. Entnahmemenge (Grenzwert)"
-      },
-	  "water_current": {
-		"name": "Wasserverbrauch Aktuell"
-	  },
-	  "water_daily": {
-	    "name": "Wasserverbrauch Heute"
-	  },
-	  "water_weekly": {
-	    "name": "Wasserverbrauch Woche"
-	  },
-	  "water_monthly": {
-	    "name": "Wasserverbrauch Monat"
-	  },
-	  "water_yearly": {
-	    "name": "Wasserverbrauch Jahr"
-	  },
-	  "ws_standby": {
-	    "name": "Wasserstop Standby"
-	  }
+      }
     }
   }
 }

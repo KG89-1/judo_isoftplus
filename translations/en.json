@@ -14,7 +14,12 @@
       }
     },
     "error": {
-      "cannot_connect": "Connection failed. Check login credentials."
+      "cannot_connect": "Connection failed. Check host and network.",
+      "invalid_auth": "Invalid authentication. Check username and password.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
     }
   },
   "options": {
@@ -29,14 +34,26 @@
   },
   "entity": {
     "sensor": {
-      "water_today": {
-        "name": "Water Consumption Today"
+      "water_total_live": {
+        "name": "Total Water Consumption (Live)"
       },
       "water_total": {
         "name": "Total Water Consumption"
       },
-      "water_total_live": {
-        "name": "Total Water Consumption (Live)"
+      "water_current": {
+        "name": "Current Water Consumption"
+      },
+      "water_daily": {
+        "name": "Daily Water Consumption"
+      },
+      "water_weekly": {
+        "name": "Weekly Water Consumption"
+      },
+      "water_monthly": {
+        "name": "Monthly Water Consumption"
+      },
+      "water_yearly": {
+        "name": "Yearly Water Consumption"
       },
       "flow_rate": {
         "name": "Flow Rate"
@@ -62,11 +79,8 @@
       "vacation": {
         "name": "Vacation Mode"
       },
-      "software_version": {
-        "name": "Software Version"
-      },
-      "hardware_version": {
-        "name": "Hardware Version"
+      "ws_standby": {
+        "name": "Waterstop Standby"
       },
       "abstraction_time": {
         "name": "Max. Abstraction Time (Limit)"
@@ -76,24 +90,6 @@
       },
       "quantity_limit": {
         "name": "Max. Quantity (Limit)"
-      },
-      "water_current": {
-        "name": "Current Water Consumption"
-      },
-      "water_daily": {
-        "name": "Daily Water Consumption"
-      },
-      "water_weekly": {
-        "name": "Weekly Water Consumption"
-      },
-      "water_monthly": {
-        "name": "Monthly Water Consumption"
-      },
-      "water_yearly": {
-        "name": "Yearly Water Consumption"
-      },
-      "ws_standby": {
-        "name": "Waterstop Standby"
       }
     }
   }
