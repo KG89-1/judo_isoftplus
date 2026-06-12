@@ -91,6 +91,11 @@
       "quantity_limit": {
         "name": "Max. Entnahmemenge (Grenzwert)"
       }
+    },
+    "valve": {
+      "waterstop_valve": {
+        "name": "Wasserstop"
+      }
     }
   }
 }

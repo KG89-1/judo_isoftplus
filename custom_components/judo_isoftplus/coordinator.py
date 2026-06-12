@@ -24,6 +24,7 @@ from .const import (
     KEY_WATER_CURRENT,
     KEY_WATER_TOTAL,
     KEY_WATER_TOTAL_LIVE,
+    KEY_WS_VALVE,
     LIVE_TOTAL_RESET_THRESHOLD,
 )
 from .sensor import SENSOR_DESCRIPTIONS, JudoSensorEntityDescription
@@ -32,6 +33,13 @@ _LOGGER = logging.getLogger(__name__)
 
 type DataKey = tuple[str, str]
 type JudoConfigEntry = ConfigEntry[JudoCoordinator]
+
+# Entities outside the sensor platform: unique_id suffix -> required data
+# pairs. These are enabled by default, so they are also part of the
+# first-setup fallback below.
+EXTRA_ENTITY_PAIRS: dict[str, set[DataKey]] = {
+    "waterstop_valve": {KEY_WS_VALVE},
+}
 
 
 class JudoCoordinator(DataUpdateCoordinator[dict[DataKey, Any]]):
@@ -170,16 +178,21 @@ class JudoCoordinator(DataUpdateCoordinator[dict[DataKey, Any]]):
             have_registry_entries = True
             if reg_entry.disabled:
                 continue
-            desc = descriptions.get(reg_entry.unique_id[len(prefix) :])
+            suffix = reg_entry.unique_id[len(prefix) :]
+            desc = descriptions.get(suffix)
             if desc is not None:
                 pairs.update(self._pairs_for(desc))
+            elif suffix in EXTRA_ENTITY_PAIRS:
+                pairs.update(EXTRA_ENTITY_PAIRS[suffix])
 
         if not have_registry_entries:
             # Very first setup: entities are not registered yet, so poll
-            # the values for all sensors that are enabled by default.
+            # the values for all entities that are enabled by default.
             for desc in SENSOR_DESCRIPTIONS:
                 if desc.entity_registry_enabled_default:
                     pairs.update(self._pairs_for(desc))
+            for extra_pairs in EXTRA_ENTITY_PAIRS.values():
+                pairs.update(extra_pairs)
 
         return pairs
 

@@ -203,6 +203,48 @@ class JudoISoftPlusAPI:
             return self._sum_ints(value)
         return value
 
+    def write_value(self, group: str, command: str, parameter: str) -> None:
+        """Send a write command; retries once after a re-login on failure.
+
+        ``group`` and ``command`` are expected to be pre-URL-encoded
+        (wire format), the parameter is quoted here. Raises JudoError if
+        the device does not acknowledge with status "ok".
+        """
+        self._ensure_session()
+
+        try:
+            data = self._write_raw(group, command, parameter)
+        except JudoNotLoggedInError:
+            _LOGGER.info(
+                "Session expired while writing %s/%s - re-login", group, command
+            )
+            self.login()
+            self.connect()
+            data = self._write_raw(group, command, parameter)
+        except OSError as err:
+            _LOGGER.warning(
+                "Connection problem writing %s/%s (%s) - retrying after re-login",
+                group,
+                command,
+                err,
+            )
+            self.login()
+            self.connect()
+            data = self._write_raw(group, command, parameter)
+
+        if not isinstance(data, dict) or data.get("status") != "ok":
+            raise JudoError(
+                f"Device rejected write {group}/{command}={parameter}: {data!r}"
+            )
+        _LOGGER.debug("Write %s/%s=%s acknowledged", group, command, parameter)
+
+    def _write_raw(self, group: str, command: str, parameter: str) -> Any:
+        params = (
+            f"group={group}&command={command}&"
+            f"parameter={quote(str(parameter), safe='')}&token={self.token}"
+        )
+        return self._request(params)
+
     def _read_raw(self, group: str, command: str, msg: int) -> Any:
         params = f"group={group}&command={command}&msgnumber={msg}&token={self.token}"
         return self._request(params)

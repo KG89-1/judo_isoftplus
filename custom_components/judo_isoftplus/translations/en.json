@@ -91,6 +91,11 @@
       "quantity_limit": {
         "name": "Max. Quantity (Limit)"
       }
+    },
+    "valve": {
+      "waterstop_valve": {
+        "name": "Waterstop"
+      }
     }
   }
 }

@@ -7,10 +7,30 @@ Custom Integration für die **JUDO i-soft plus** Enthärtungsanlage über die lo
 ## Funktionen
 
 - Einrichtung vollständig über die UI (Config Flow), keine YAML-Konfiguration
+- **Steuerbares Wasserstop-Ventil** (Valve-Entität): Öffnen/Schließen direkt aus HA, z. B. für Leckage-Automationen
 - Pro Gerät genau ein Eintrag (Seriennummer als `unique_id`), bei IP-Wechsel wird der Host automatisch aktualisiert
 - **Effizientes Polling:** Es werden nur die Werte abgefragt, die zu aktivierten Entitäten gehören – schont den langsamen Embedded-Controller des Geräts
 - Einstellbares Aktualisierungsintervall (60–3600 s, Standard 300 s) über die Integrationsoptionen
 - Deutsche und englische Übersetzungen
+
+## Wasserstop-Ventil
+
+Die Integration legt eine standardmäßig aktivierte Valve-Entität **Wasserstop** an, über die sich das Absperrventil der Anlage öffnen und schließen lässt – per Dashboard-Karte, Service-Aufruf (`valve.open_valve` / `valve.close_valve`) oder in Automationen, etwa:
+
+```yaml
+automation:
+  - alias: "Leckage -> Wasser zu"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.wassersensor_keller
+        to: "on"
+    actions:
+      - action: valve.close_valve
+        target:
+          entity_id: valve.judo_i_soft_plus_wasserstop
+```
+
+⚠️ Das Schließen sperrt die gesamte Wasserzufuhr hinter der Anlage. Verwendung auf eigene Verantwortung.
 
 ## Sensoren
 

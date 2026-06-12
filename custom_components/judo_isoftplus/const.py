@@ -9,7 +9,7 @@ DOMAIN: Final = "judo_isoftplus"
 
 CONF_SERIAL: Final = "serial"
 
-PLATFORMS: Final = [Platform.SENSOR]
+PLATFORMS: Final = [Platform.SENSOR, Platform.VALVE]
 
 DEFAULT_SCAN_INTERVAL: Final = 300  # seconds
 MIN_SCAN_INTERVAL: Final = 60
@@ -26,6 +26,7 @@ LIVE_TOTAL_RESET_THRESHOLD: Final = 50  # litres
 KEY_WATER_TOTAL: Final = ("consumption", "water%20total")
 KEY_WATER_CURRENT: Final = ("consumption", "water%20current")
 KEY_WATER_TOTAL_LIVE: Final = ("internal", "water_total_live")
+KEY_WS_VALVE: Final = ("waterstop", "valve")
 KEY_SW_VERSION: Final = ("version", "software%20version")
 KEY_HW_VERSION: Final = ("version", "hardware%20version")
 
