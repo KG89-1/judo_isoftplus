@@ -10,7 +10,7 @@ from homeassistant.components.valve import (
     ValveEntity,
     ValveEntityFeature,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -162,13 +162,24 @@ class JudoWaterstopValve(CoordinatorEntity["JudoCoordinator"], ValveEntity):
 
                 if isinstance(value, str) and value.strip().lower() in expected:
                     _LOGGER.debug("Valve reached target state '%s'", target)
-                    return
-            _LOGGER.warning(
-                "Valve did not report target state '%s' within %s s",
-                target,
-                _VERIFY_INTERVAL * _VERIFY_ATTEMPTS,
-            )
-        finally:
+                    break
+            else:
+                _LOGGER.warning(
+                    "Valve did not report target state '%s' within %s s",
+                    target,
+                    _VERIFY_INTERVAL * _VERIFY_ATTEMPTS,
+                )
+        except asyncio.CancelledError:
+            # Superseded by a newer command or torn down with the config
+            # entry - the new owner manages the transition state, and the
+            # entity may already be removed: do not touch state here.
+            raise
+        self._finish_verify(target)
+
+    @callback
+    def _finish_verify(self, target: str) -> None:
+        """Clear the transition state - but only if we still own it."""
+        if self._pending_target == target:
             self._pending_target = None
             self.async_write_ha_state()
 

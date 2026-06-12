@@ -10,6 +10,7 @@ import json
 import logging
 import re
 import ssl
+import threading
 import time
 import urllib.request
 from typing import Any
@@ -49,6 +50,10 @@ class JudoISoftPlusAPI:
         self.token: str | None = None
         self._last_login: float | None = None
         self._ssl_context: ssl.SSLContext | None = None
+        # Serializes all device I/O: the slow embedded controller must
+        # never receive concurrent requests (coordinator poll vs. valve
+        # verification), and this also prevents token races on re-login.
+        self._io_lock = threading.RLock()
 
     # ------------------------------------------------------------------
     # Low level helpers
@@ -103,30 +108,32 @@ class JudoISoftPlusAPI:
 
     def login(self) -> None:
         """Log in and store the session token."""
-        params = (
-            "group=register&command=login&msgnumber=1&name=login&"
-            f"user={quote(self.username, safe='')}&"
-            f"password={quote(self.password, safe='')}&role=customer"
-        )
-        data = self._request(params)
-        token = data.get("token") if isinstance(data, dict) else None
-        if not token:
-            raise JudoAuthError("Login rejected - check username/password")
-        self.token = token
-        self._last_login = time.monotonic()
-        _LOGGER.debug("Login successful")
+        with self._io_lock:
+            params = (
+                "group=register&command=login&msgnumber=1&name=login&"
+                f"user={quote(self.username, safe='')}&"
+                f"password={quote(self.password, safe='')}&role=customer"
+            )
+            data = self._request(params)
+            token = data.get("token") if isinstance(data, dict) else None
+            if not token:
+                raise JudoAuthError("Login rejected - check username/password")
+            self.token = token
+            self._last_login = time.monotonic()
+            _LOGGER.debug("Login successful")
 
     def connect(self) -> None:
         """Bind the session to the device serial number."""
-        params = (
-            "group=register&command=connect&msgnumber=6&"
-            f"token={self.token}&parameter=i-soft%20plus&"
-            f"serial%20number={quote(self.serial, safe='')}"
-        )
-        data = self._request(params)
-        if not isinstance(data, dict) or data.get("status") != "ok":
-            raise JudoError(f"Connect failed: {data!r}")
-        _LOGGER.debug("Connect successful")
+        with self._io_lock:
+            params = (
+                "group=register&command=connect&msgnumber=6&"
+                f"token={self.token}&parameter=i-soft%20plus&"
+                f"serial%20number={quote(self.serial, safe='')}"
+            )
+            data = self._request(params)
+            if not isinstance(data, dict) or data.get("status") != "ok":
+                raise JudoError(f"Connect failed: {data!r}")
+            _LOGGER.debug("Connect successful")
 
     def _ensure_session(self) -> None:
         """Log in (again) if there is no session or it is likely stale."""
@@ -175,41 +182,42 @@ class JudoISoftPlusAPI:
         ``group`` and ``command`` are expected to be pre-URL-encoded
         (e.g. ``water%20total``) to match the device's wire format.
         """
-        self._ensure_session()
+        with self._io_lock:
+            self._ensure_session()
 
-        try:
-            data = self._read_raw(group, command, msg)
-        except JudoNotLoggedInError:
-            _LOGGER.info(
-                "Session expired while reading %s/%s - re-login", group, command
-            )
-            self.login()
-            self.connect()
-            data = self._read_raw(group, command, msg)
-        except OSError as err:
-            # Timeouts, TLS and connection errors -> one retry after re-login.
-            _LOGGER.warning(
-                "Connection problem reading %s/%s (%s) - retrying after re-login",
-                group,
-                command,
-                err,
-            )
-            self.login()
-            self.connect()
-            data = self._read_raw(group, command, msg)
+            try:
+                data = self._read_raw(group, command, msg)
+            except JudoNotLoggedInError:
+                _LOGGER.info(
+                    "Session expired while reading %s/%s - re-login", group, command
+                )
+                self.login()
+                self.connect()
+                data = self._read_raw(group, command, msg)
+            except OSError as err:
+                # Timeouts, TLS and connection errors -> one retry after re-login.
+                _LOGGER.warning(
+                    "Connection problem reading %s/%s (%s) - retrying after re-login",
+                    group,
+                    command,
+                    err,
+                )
+                self.login()
+                self.connect()
+                data = self._read_raw(group, command, msg)
 
-        value = data.get("data") if isinstance(data, dict) else None
+            value = data.get("data") if isinstance(data, dict) else None
 
-        if command in ("water%20total", "water%20current"):
-            return self._first_int(value)
-        if command in (
-            "water%20daily",
-            "water%20weekly",
-            "water%20monthly",
-            "water%20yearly",
-        ):
-            return self._sum_ints(value)
-        return value
+            if command in ("water%20total", "water%20current"):
+                return self._first_int(value)
+            if command in (
+                "water%20daily",
+                "water%20weekly",
+                "water%20monthly",
+                "water%20yearly",
+            ):
+                return self._sum_ints(value)
+            return value
 
     def write_value(self, group: str, command: str, parameter: str) -> None:
         """Send a write command; retries once after a re-login on failure.
@@ -218,33 +226,34 @@ class JudoISoftPlusAPI:
         (wire format), the parameter is quoted here. Raises JudoError if
         the device does not acknowledge with status "ok".
         """
-        self._ensure_session()
+        with self._io_lock:
+            self._ensure_session()
 
-        try:
-            data = self._write_raw(group, command, parameter)
-        except JudoNotLoggedInError:
-            _LOGGER.info(
-                "Session expired while writing %s/%s - re-login", group, command
-            )
-            self.login()
-            self.connect()
-            data = self._write_raw(group, command, parameter)
-        except OSError as err:
-            _LOGGER.warning(
-                "Connection problem writing %s/%s (%s) - retrying after re-login",
-                group,
-                command,
-                err,
-            )
-            self.login()
-            self.connect()
-            data = self._write_raw(group, command, parameter)
+            try:
+                data = self._write_raw(group, command, parameter)
+            except JudoNotLoggedInError:
+                _LOGGER.info(
+                    "Session expired while writing %s/%s - re-login", group, command
+                )
+                self.login()
+                self.connect()
+                data = self._write_raw(group, command, parameter)
+            except OSError as err:
+                _LOGGER.warning(
+                    "Connection problem writing %s/%s (%s) - retrying after re-login",
+                    group,
+                    command,
+                    err,
+                )
+                self.login()
+                self.connect()
+                data = self._write_raw(group, command, parameter)
 
-        if not isinstance(data, dict) or data.get("status") != "ok":
-            raise JudoError(
-                f"Device rejected write {group}/{command}={parameter}: {data!r}"
-            )
-        _LOGGER.debug("Write %s/%s=%s acknowledged", group, command, parameter)
+            if not isinstance(data, dict) or data.get("status") != "ok":
+                raise JudoError(
+                    f"Device rejected write {group}/{command}={parameter}: {data!r}"
+                )
+            _LOGGER.debug("Write %s/%s=%s acknowledged", group, command, parameter)
 
     def _write_raw(self, group: str, command: str, parameter: str) -> Any:
         params = (

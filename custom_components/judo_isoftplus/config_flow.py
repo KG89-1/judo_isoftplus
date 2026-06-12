@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 import voluptuous as vol
@@ -53,7 +54,10 @@ class JudoConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            user_input[CONF_HOST] = user_input[CONF_HOST].strip()
+            # Tolerate pasted URLs: strip scheme, trailing slashes, spaces.
+            host = user_input[CONF_HOST].strip()
+            host = re.sub(r"^https?://", "", host, flags=re.IGNORECASE).strip("/")
+            user_input[CONF_HOST] = host
             user_input[CONF_SERIAL] = user_input[CONF_SERIAL].strip()
 
             # One config entry per device; if it already exists, update

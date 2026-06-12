@@ -81,6 +81,11 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 
 ## Changelog
 
+### v0.3.5
+- Fix: Race-Condition bei schnell aufeinanderfolgenden Ventil-Schaltbefehlen (Übergangszustand des neueren Befehls wurde gelöscht; Fehlermeldung im Log beim Neuladen der Integration während laufender Verifikation)
+- Fix: Sämtliche Geräte-Zugriffe sind jetzt serialisiert (Lock) – keine gleichzeitigen Requests mehr durch Coordinator-Poll und Ventil-Verifikation, kein Token-Race bei parallelem Re-Login
+- Config Flow toleriert eingefügte URLs als Host (`https://`-Präfix und Slashes werden entfernt)
+
 ### v0.3.4
 - Diagnostics-Support: Diagnose-Download über die HA-Oberfläche (Zugangsdaten, Host und Seriennummer werden geschwärzt) – ideal als Anhang für GitHub-Issues
 
