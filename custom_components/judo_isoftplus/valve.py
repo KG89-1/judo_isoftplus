@@ -1,7 +1,9 @@
 """Valve platform for the JUDO i-soft plus integration (waterstop)."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import asyncio
+import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.components.valve import (
     ValveDeviceClass,
@@ -20,6 +22,8 @@ from .const import DOMAIN, KEY_WS_VALVE
 if TYPE_CHECKING:
     from .coordinator import JudoConfigEntry, JudoCoordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 # Write commands must not run in parallel against the slow embedded
 # controller.
 PARALLEL_UPDATES = 1
@@ -29,6 +33,13 @@ _CLOSED_STATES = frozenset({"close", "closed"})
 _OPEN_STATES = frozenset({"open", "opened"})
 _CLOSING_STATES = frozenset({"closing"})
 _OPENING_STATES = frozenset({"opening"})
+
+# After a command the motorized valve needs time to travel and the
+# controller updates its status value lazily. Verify by re-reading only
+# the valve status (single cheap request) until the target state shows
+# up, instead of waiting for the next full scan interval.
+_VERIFY_INTERVAL = 10  # seconds between status reads
+_VERIFY_ATTEMPTS = 9  # ~90 s total
 
 
 async def async_setup_entry(
@@ -57,6 +68,10 @@ class JudoWaterstopValve(CoordinatorEntity["JudoCoordinator"], ValveEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
         )
+        self._entry = entry
+        # "open"/"close" while a command is being verified, else None.
+        self._pending_target: str | None = None
+        self._verify_task: asyncio.Task | None = None
 
     # ------------------------------------------------------------------
     # State
@@ -85,12 +100,12 @@ class JudoWaterstopValve(CoordinatorEntity["JudoCoordinator"], ValveEntity):
     @property
     def is_closing(self) -> bool:
         """Return True while the valve is closing."""
-        return self._raw_state() in _CLOSING_STATES
+        return self._pending_target == "close" or self._raw_state() in _CLOSING_STATES
 
     @property
     def is_opening(self) -> bool:
         """Return True while the valve is opening."""
-        return self._raw_state() in _OPENING_STATES
+        return self._pending_target == "open" or self._raw_state() in _OPENING_STATES
 
     # ------------------------------------------------------------------
     # Commands
@@ -113,5 +128,57 @@ class JudoWaterstopValve(CoordinatorEntity["JudoCoordinator"], ValveEntity):
             raise HomeAssistantError(
                 f"Could not send '{parameter}' to the waterstop valve: {err}"
             ) from err
-        # Fetch the real state right away (debounced).
-        await self.coordinator.async_request_refresh()
+
+        # Device acknowledged with status ok: show the transition right
+        # away (opening/closing) and verify in the background.
+        self._cancel_verify()
+        self._pending_target = parameter
+        self.async_write_ha_state()
+        self._verify_task = self._entry.async_create_background_task(
+            self.hass,
+            self._async_verify(parameter),
+            name=f"{DOMAIN} verify valve {parameter}",
+        )
+
+    async def _async_verify(self, target: str) -> None:
+        """Re-read only the valve status until the target state shows up."""
+        expected = _CLOSED_STATES if target == "close" else _OPEN_STATES
+        try:
+            for _ in range(_VERIFY_ATTEMPTS):
+                await asyncio.sleep(_VERIFY_INTERVAL)
+                try:
+                    value = await self.hass.async_add_executor_job(
+                        self.coordinator.api.read_value, "waterstop", "valve"
+                    )
+                except (OSError, JudoError, ValueError) as err:
+                    _LOGGER.debug("Valve verify read failed: %s", err)
+                    continue
+
+                # Push into the coordinator data so the status sensor and
+                # this entity stay consistent (notifies all listeners).
+                data = dict(self.coordinator.data or {})
+                data[KEY_WS_VALVE] = value
+                self.coordinator.async_set_updated_data(data)
+
+                if isinstance(value, str) and value.strip().lower() in expected:
+                    _LOGGER.debug("Valve reached target state '%s'", target)
+                    return
+            _LOGGER.warning(
+                "Valve did not report target state '%s' within %s s",
+                target,
+                _VERIFY_INTERVAL * _VERIFY_ATTEMPTS,
+            )
+        finally:
+            self._pending_target = None
+            self.async_write_ha_state()
+
+    def _cancel_verify(self) -> None:
+        if self._verify_task is not None and not self._verify_task.done():
+            self._verify_task.cancel()
+        self._verify_task = None
+        self._pending_target = None
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Cancel a running verification when the entity is removed."""
+        self._cancel_verify()
+        await super().async_will_remove_from_hass()
