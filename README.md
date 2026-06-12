@@ -11,6 +11,7 @@ Custom Integration für die **JUDO i-soft plus** Enthärtungsanlage über die lo
 - Pro Gerät genau ein Eintrag (Seriennummer als `unique_id`), bei IP-Wechsel wird der Host automatisch aktualisiert
 - **Effizientes Polling:** Es werden nur die Werte abgefragt, die zu aktivierten Entitäten gehören – schont den langsamen Embedded-Controller des Geräts
 - Einstellbares Aktualisierungsintervall (60–3600 s, Standard 300 s) über die Integrationsoptionen
+- **Schneller HA-Start:** Beim Setup wird nur die Verbindung geprüft; der erste komplette Datenabruf läuft im Hintergrund und verzögert den Home-Assistant-Start nicht
 - Deutsche und englische Übersetzungen
 
 ## Wasserstop-Ventil
@@ -29,6 +30,8 @@ automation:
         target:
           entity_id: valve.judo_i_soft_plus_wasserstop
 ```
+
+Nach einem Schaltbefehl zeigt die Entität sofort den Übergangszustand („öffnet…"/„schließt…") an und verifiziert den tatsächlichen Ventilstatus anschließend gezielt im Hintergrund (alle 10 s, max. 90 s) – der bestätigte Zustand erscheint also typischerweise nach 10–30 s und nicht erst beim nächsten regulären Abfragezyklus. Das motorisierte Ventil selbst braucht einige Sekunden zum Fahren.
 
 ⚠️ Das Schließen sperrt die gesamte Wasserzufuhr hinter der Anlage. Verwendung auf eigene Verantwortung.
 
@@ -64,7 +67,7 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 ### Über HACS (empfohlen)
 
 1. HACS → Menü (⋮) → **Benutzerdefinierte Repositories**
-2. Repository-URL `https://github.com/KG89-1/judo-isoftplus` eintragen, Typ **Integration**
+2. Repository-URL `https://github.com/KG89-1/judo_isoftplus` eintragen, Typ **Integration**
 3. „JUDO i-soft plus" installieren und Home Assistant neu starten
 
 ### Manuell
@@ -76,14 +79,29 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 
 **Einstellungen → Geräte & Dienste → Integration hinzufügen → „JUDO i-soft plus"**, dann Host (IP oder Hostname), Benutzername, Passwort und Seriennummer eingeben. Das Aktualisierungsintervall lässt sich anschließend über **Konfigurieren** am Integrationseintrag anpassen.
 
-## Breaking Changes in v0.2.0
+## Changelog
 
+### v0.3.2
+- Ventilstatus nach Schaltbefehl sofort sichtbar: optimistischer Übergangszustand (öffnet/schließt) nach Geräte-Bestätigung, danach gezielte Status-Verifikation (alle 10 s, max. 90 s) statt Warten auf den nächsten Poll-Zyklus
+- Repository-URLs in `manifest.json` und README korrigiert (Dokumentations- und Issue-Links in der HA-Oberfläche funktionieren jetzt)
+- Dokumentation überarbeitet (Ventilverhalten, Startverhalten, Changelog)
+
+### v0.3.0
+- **Neu: Steuerbares Wasserstop-Ventil** als Valve-Entität (Öffnen/Schließen), standardmäßig aktiviert
+- Neue API-Methode für Schreibbefehle mit Session-Retry und Geräte-Bestätigung
+
+### v0.2.1
+- Erster Datenabruf blockiert nicht mehr den Home-Assistant-Start (Hintergrund-Task); SW/HW-Version wird nach dem ersten Abruf ins Device-Registry nachgetragen
+
+### v0.2.0 (Breaking)
 - Sensor `water_today` entfernt (war ein Duplikat von `water_daily`) – ggf. verwaiste Entität manuell löschen
 - Einheit von „Reichweite Salz" von `days` auf `d` geändert (Standard-HA-Einheit, `device_class: duration`)
 - Mindestversion Home Assistant 2024.12
+- Sicherheit: Zugangsdaten/Token werden im Debug-Log geschwärzt; robustes Fehlerhandling (einzelne Lesefehler statt Komplettausfall), `unique_id` im Config Flow, korrekte Device-/State-Classes für alle Wasserzähler
 
 ## Fehlerbehebung
 
+- **Kurz „nicht verfügbar" nach einem Neustart:** Normal – die Entitäten füllen sich, sobald der erste Hintergrund-Abruf vom (langsamen) Gerät beantwortet wurde.
 - **Sensoren „nicht verfügbar":** Einzelne Lesefehler betreffen nur die jeweilige Entität; erst wenn alle Abfragen fehlschlagen, gilt das Gerät als offline. Details stehen im Log (`custom_components.judo_isoftplus`).
 - Debug-Logging aktivieren:
 
