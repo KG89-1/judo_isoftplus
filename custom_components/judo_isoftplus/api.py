@@ -72,7 +72,15 @@ class JudoISoftPlusAPI:
         url = f"https://{self.host}:{API_PORT}/?{params}"
         _LOGGER.debug("GET /?%s", _REDACT_PARAMS.sub(r"\1=***", params))
 
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(
+            url,
+            headers={
+                # Mirror the proven EDOMI implementation: announce JSON and
+                # a proper user agent instead of urllib's default.
+                "Accept": "application/json",
+                "User-Agent": "HomeAssistant-judo_isoftplus",
+            },
+        )
         with urllib.request.urlopen(
             req, context=self._get_ssl_context(), timeout=timeout
         ) as resp:

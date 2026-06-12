@@ -81,6 +81,9 @@ Hinweis: Das Gerät verwendet ein selbstsigniertes Zertifikat und ältere TLS-Ci
 
 ## Changelog
 
+### v0.3.3
+- API-Requests senden jetzt `Accept: application/json` und einen eigenen User-Agent (analog zur bewährten EDOMI-Implementierung) statt der urllib-Defaults
+
 ### v0.3.2
 - Ventilstatus nach Schaltbefehl sofort sichtbar: optimistischer Übergangszustand (öffnet/schließt) nach Geräte-Bestätigung, danach gezielte Status-Verifikation (alle 10 s, max. 90 s) statt Warten auf den nächsten Poll-Zyklus
 - Repository-URLs in `manifest.json` und README korrigiert (Dokumentations- und Issue-Links in der HA-Oberfläche funktionieren jetzt)
